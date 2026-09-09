@@ -39,11 +39,13 @@ jobs:
         run: |
           echo "Waiting for MySQL..."
           for i in {1..30}; do
-            if docker compose exec -T mysql mysqladmin ping -h localhost --silent; then
-              echo "MySQL is ready"
+            status=$(docker inspect --format='{{.State.Health.Status}}' peminjaman-mysql-1 2>/dev/null || echo "starting")
+            if [ "$status" == "healthy" ]; then
+              echo "MySQL is healthy"
               break
             fi
-            sleep 2
+            echo "Status: $status, waiting..."
+            sleep 3
           done
 
       - name: Generate app key
