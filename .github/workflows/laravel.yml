@@ -10,23 +10,46 @@ jobs:
   test:
     runs-on: ubuntu-latest
 
+    env:
+      WWWUSER: 1000
+      WWWGROUP: 1000
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Setup PHP
-        uses: shivammathur/setup-php@v2
-        with:
-          php-version: '8.2'
-
       - name: Copy .env
         run: cp .env.example .env
 
+      - name: Build Docker images
+        run: docker compose build
+
+      - name: Start containers
+        run: docker compose up -d
+
+      - name: Wait for MySQL to be healthy
+        run: |
+          echo "Waiting for MySQL..."
+          for i in {1..30}; do
+            if docker compose exec -T mysql mysqladmin ping -h localhost --silent; then
+              echo "MySQL is ready"
+              break
+            fi
+            sleep 2
+          done
+
       - name: Install Composer dependencies
-        run: composer install --no-interaction --prefer-dist --optimize-autoloader
+        run: docker compose exec -T laravel.test composer install --no-interaction --optimize-autoloader
 
       - name: Generate app key
-        run: php artisan key:generate
+        run: docker compose exec -T laravel.test php artisan key:generate
+
+      - name: Run migrations
+        run: docker compose exec -T laravel.test php artisan migrate --force
 
       - name: Run tests
-        run: php artisan test
+        run: docker compose exec -T laravel.test php artisan test
+
+      - name: Stop containers
+        if: always()
+        run: docker compose down
