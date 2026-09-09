@@ -18,8 +18,16 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.2'
+
       - name: Copy .env
         run: cp .env.example .env
+
+      - name: Install Composer dependencies
+        run: composer install --no-interaction --prefer-dist --optimize-autoloader
 
       - name: Build Docker images
         run: docker compose build
@@ -37,9 +45,6 @@ jobs:
             fi
             sleep 2
           done
-
-      - name: Install Composer dependencies
-        run: docker compose exec -T laravel.test composer install --no-interaction --optimize-autoloader
 
       - name: Generate app key
         run: docker compose exec -T laravel.test php artisan key:generate
