@@ -1,0 +1,42 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: peminjaman-app
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: peminjaman-app
+  template:
+    metadata:
+      labels:
+        app: peminjaman-app
+    spec:
+      containers:
+        - name: app
+          image: ghcr.io/mdinah/peminjaman:prod
+          env:
+            - name: DB_HOST
+              value: mysql
+            - name: DB_DATABASE
+              value: peminjaman
+            - name: DB_USERNAME
+              value: laravel
+            - name: DB_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: peminjaman-secrets
+                  key: DB_PASSWORD
+            - name: APP_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: peminjaman-secrets
+                  key: APP_KEY
+            - name: APP_ENV
+              value: "production"
+            - name: APP_DEBUG
+              value: "true"
+            - name: APP_URL
+              value: "http://localhost:8080"
+          ports:
+            - containerPort: 80
